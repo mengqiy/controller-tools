@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
 
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,8 +43,6 @@ type admissionWebhook struct {
 	// namespaceSelector maps to the namespaceSelector field in admissionregistrationv1beta1.admissionWebhook
 	// This optional.
 	namespaceSelector *metav1.LabelSelector
-
-	once sync.Once
 }
 
 func (w *admissionWebhook) setDefaults() {
@@ -69,25 +66,22 @@ func (w *admissionWebhook) setDefaults() {
 
 // GetName returns the name of the webhook.
 func (w *admissionWebhook) GetName() string {
-	w.once.Do(w.setDefaults)
 	return w.name
 }
 
 // GetPath returns the path that the webhook registered.
 func (w *admissionWebhook) GetPath() string {
-	w.once.Do(w.setDefaults)
+	w.setDefaults()
 	return w.path
 }
 
 // GetType returns the type of the webhook.
 func (w *admissionWebhook) GetType() webhookType {
-	w.once.Do(w.setDefaults)
 	return w.t
 }
 
 // Validate validates if the webhook is valid.
 func (w *admissionWebhook) Validate() error {
-	w.once.Do(w.setDefaults)
 	if len(w.rules) == 0 {
 		return errors.New("field rules should not be empty")
 	}

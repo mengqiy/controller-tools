@@ -28,11 +28,12 @@ var expected = map[string]string{
 kind: MutatingWebhookConfiguration
 metadata:
   annotations:
-    admissionwebhook.alpha.kubebuilder.io/ca-secret-name: webhook-cert
+    alpha.admissionwebhook.kubebuilder.io/ca-secret-name: test-system/webhook-secret
   creationTimestamp: null
   name: test-mutating-webhook-cfg
 webhooks:
 - clientConfig:
+    caBundle: XG4=
     service:
       name: webhook-service
       namespace: test-system
@@ -56,11 +57,12 @@ apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
-    admission.alpha.kubebuilder.io/ca-secret-name: webhook-cert
+    alpha.admissionwebhook.kubebuilder.io/ca-secret-name: test-system/webhook-secret
   creationTimestamp: null
   name: test-validating-webhook-cfg
 webhooks:
 - clientConfig:
+    caBundle: XG4=
     service:
       name: webhook-service
       namespace: test-system
@@ -85,7 +87,7 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
-    service.alpha.kubebuilder.io/serving-cert-secret-name: webhook-cert
+    alpha.service.kubebuilder.io/serving-cert-secret-name: webhook-secret
   creationTimestamp: null
   name: webhook-service
   namespace: test-system
@@ -107,8 +109,9 @@ spec:
     metadata:
       labels:
         app: webhook-server
+    spec:
       containers:
-      - name: webhook-server-container
+      - name: manager
         ports:
         - containerPort: 7890
           name: webhook-server

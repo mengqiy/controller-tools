@@ -74,8 +74,9 @@ spec:
       labels:
 {{ toYaml . | indent 8 }}
 {{- end }}
+    spec:
       containers:
-      - name: webhook-server-container
+      - name: manager
         ports:
         - containerPort: {{ .Port }}
           name: webhook-server

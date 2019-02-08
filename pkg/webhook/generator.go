@@ -122,7 +122,9 @@ func (o *generatorOptions) getClientConfig() (*admissionregistration.WebhookClie
 		return nil, errors.New("URL and service can't be set at the same time")
 	}
 	cc := &admissionregistration.WebhookClientConfig{
-		CABundle: []byte{},
+		// Put an non-empty and not harmful CABundle here.
+		// Not doing this will cause the field
+		CABundle: []byte(`\n`),
 	}
 	if o.host != nil {
 		u := url.URL{
@@ -224,7 +226,10 @@ func (o *generatorOptions) mutatingWHConfigs() (runtime.Object, error) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: o.mutatingWebhookConfigName,
 				Annotations: map[string]string{
-					"admissionwebhook.alpha.kubebuilder.io/ca-secret-name": "webhook-cert",
+					// The format is "namespace/secret-name"
+					// This annotation will be understood by cert-manager.
+					// TODO(mengqiy): point to the section in kubebuilder book when everything is ready.
+					"alpha.admissionwebhook.kubebuilder.io/ca-secret-name": o.secret.String(),
 				},
 			},
 			Webhooks: mutatingWebhooks,
@@ -262,7 +267,10 @@ func (o *generatorOptions) validatingWHConfigs() (runtime.Object, error) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: o.validatingWebhookConfigName,
 				Annotations: map[string]string{
-					"admission.alpha.kubebuilder.io/ca-secret-name": "webhook-cert",
+					// The format is "namespace/secret-name"
+					// This annotation will be understood by cert-manager.
+					// TODO(mengqiy): point to the section in kubebuilder book when everything is ready.
+					"alpha.admissionwebhook.kubebuilder.io/ca-secret-name": o.secret.String(),
 				},
 			},
 			Webhooks: validatingWebhooks,
@@ -288,11 +296,6 @@ func (o *generatorOptions) admissionWebhook(path string, wh *admissionWebhook) (
 		Rules:             wh.rules,
 		FailurePolicy:     wh.failurePolicy,
 		NamespaceSelector: wh.namespaceSelector,
-		ClientConfig: admissionregistration.WebhookClientConfig{
-			// The reason why we assign an empty byte array to CABundle is that
-			// CABundle field will be updated by the Provisioner.
-			CABundle: []byte{},
-		},
 	}
 	cc, err := o.getClientConfigWithPath(path)
 	if err != nil {
@@ -316,7 +319,10 @@ func (o *generatorOptions) getService() runtime.Object {
 			Name:      o.service.name,
 			Namespace: o.service.namespace,
 			Annotations: map[string]string{
-				"service.alpha.kubebuilder.io/serving-cert-secret-name": "webhook-cert",
+				// Secret here only need name, since it will be in the same namespace as the service.
+				// This annotation will be understood by cert-manager.
+				// TODO(mengqiy): point to the section in kubebuilder book when everything is ready.
+				"alpha.service.kubebuilder.io/serving-cert-secret-name": o.secret.Name,
 			},
 		},
 		Spec: corev1.ServiceSpec{
