@@ -45,6 +45,17 @@
   version = "v1.0"
 
 [[projects]]
+  digest = "1:f68a01bac4f983a009f1ad7cf315f4180557c9f73d9c6f84835e93c10682f368"
+  name = "github.com/jetstack/cert-manager"
+  packages = [
+    "pkg/apis/certmanager",
+    "pkg/apis/certmanager/v1alpha1",
+  ]
+  pruneopts = "UT"
+  revision = "193c5e22d6d2ad56956b97c7e4899267bd4ac3ac"
+  version = "v0.7.0"
+
+[[projects]]
   digest = "1:ecd9aa82687cf31d1585d4ac61d0ba180e42e8a6182b85bd785fcca8dfeefc1b"
   name = "github.com/joho/godotenv"
   packages = ["."]
@@ -260,6 +271,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/ghodss/yaml",
+    "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1",
     "github.com/markbates/inflect",
     "github.com/pkg/errors",
     "github.com/spf13/afero",

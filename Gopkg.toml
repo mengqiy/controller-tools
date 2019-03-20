@@ -2,17 +2,21 @@ ignored = [
     "sigs.k8s.io/controller-tools/testData/*",  # it's just testdata
 ]
 
-[[constraint]]
+[[override]]
   name="k8s.io/api"
   version="kubernetes-1.13.4"
 
-[[constraint]]
+[[override]]
   name="k8s.io/apiextensions-apiserver"
   version="kubernetes-1.13.4"
 
-[[constraint]]
+[[override]]
   name="k8s.io/apimachinery"
   version="kubernetes-1.13.4"
+
+[[override]]
+  name="github.com/jetstack/cert-manager"
+  version="v0.7.0"
 
 [[constraint]]
   name = "github.com/spf13/afero"
