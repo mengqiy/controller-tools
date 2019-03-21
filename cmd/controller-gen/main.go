@@ -189,6 +189,8 @@ func newWebhookCmd() *cobra.Command {
 	o := &webhook.Options{}
 	o.SetDefaults()
 
+	fmt.Println("hello world")
+
 	cmd := &cobra.Command{
 		Use:   "webhook",
 		Short: "Generates webhook related manifests",

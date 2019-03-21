@@ -18,11 +18,16 @@ package webhook
 
 import (
 	"errors"
+	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"net"
 	"net/url"
 	"path"
 	"sort"
 	"strconv"
+
+	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
+	cmv1alpha1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha1"
 
 	"k8s.io/api/admissionregistration/v1beta1"
 	admissionregistration "k8s.io/api/admissionregistration/v1beta1"
@@ -51,6 +56,7 @@ type generatorOptions struct {
 
 	// secret is the location for storing the certificate for the admission server.
 	// The server should have permission to create a secret in the namespace.
+	// TODO: we may not need namespace here, since it should be the same namespace as the service.
 	secret *apitypes.NamespacedName
 
 	// service is a k8s service fronting the webhook server pod(s).
@@ -113,7 +119,72 @@ func (o *generatorOptions) Generate() ([]runtime.Object, error) {
 	svc := o.getService()
 	objects := append(webhookConfigurations, svc)
 
-	return objects, nil
+	return append(objects, o.getIssuerAndCertificate()...), nil
+}
+
+func (o *generatorOptions) getDNSName() []string {
+	if o.service != nil {
+		return []string{
+			fmt.Sprintf("%s.%s.svc", o.service.name, o.service.namespace),
+			fmt.Sprintf("%s.%s.svc.cluster.local", o.service.name, o.service.namespace),
+		}
+	}
+	if o.host != nil {
+		return []string{*o.host}
+	}
+	return nil
+}
+
+func (o *generatorOptions) getIssuerAndCertificate() []runtime.Object {
+	dnsNames := o.getDNSName()
+	if len(dnsNames) == 0 {
+		return nil
+	}
+	issuerName := "selfsigned-issuer"
+	certName := "serving-cert"
+	issuer := &cmv1alpha1.Issuer{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: schema.GroupVersion{
+				Group:   certmanager.GroupName,
+				Version: "v1alpha1",
+			}.String(),
+			Kind: "Issuer",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      issuerName,
+			Namespace: o.secret.Namespace,
+		},
+		Spec: cmv1alpha1.IssuerSpec{
+			IssuerConfig: cmv1alpha1.IssuerConfig{
+				SelfSigned: &cmv1alpha1.SelfSignedIssuer{},
+			},
+		},
+	}
+	cert := &cmv1alpha1.Certificate{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: schema.GroupVersion{
+				Group:   certmanager.GroupName,
+				Version: "v1alpha1",
+			}.String(),
+			Kind: "Certificate",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      certName,
+			Namespace: o.secret.Namespace,
+		},
+		Spec: cmv1alpha1.CertificateSpec{
+			CommonName: dnsNames[0],
+			// TODO:
+			DNSNames:   dnsNames[1:],
+			SecretName: o.secret.Name,
+			IssuerRef: cmv1alpha1.ObjectReference{
+				Name: issuerName,
+				Kind: "Issuer",
+			},
+			IsCA: false,
+		},
+	}
+	return []runtime.Object{issuer, cert}
 }
 
 // whConfigs creates a mutatingWebhookConfiguration and(or) a validatingWebhookConfiguration.

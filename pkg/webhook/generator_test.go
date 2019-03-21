@@ -99,6 +99,32 @@ spec:
     app: webhook-server
 status:
   loadBalancer: {}
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Issuer
+metadata:
+  creationTimestamp: null
+  name: selfsigned-issuer
+  namespace: test-system
+spec:
+  selfSigned: {}
+status: {}
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  creationTimestamp: null
+  name: serving-cert
+  namespace: test-system
+spec:
+  commonName: webhook-service.test-system.svc
+  dnsNames:
+  - webhook-service.test-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: selfsigned-issuer
+  secretName: webhook-secret
+status: {}
 `,
 	"config/default/manager_patch.yaml": `apiVersion: apps/v1
 kind: StatefulSet
@@ -144,7 +170,7 @@ func TestGenerator(t *testing.T) {
 	}
 
 	for name, content := range expected {
-		got := make([]byte, 2048)
+		got := make([]byte, 4096)
 		f1, err := fs.Open(name)
 		if err != nil {
 			t.Fatalf("error when opening generated file %s: %v", name, err)

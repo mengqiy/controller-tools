@@ -49,14 +49,20 @@ func Generate(o *Options) error {
 		return fmt.Errorf("failed to parse the input dir: %v", err)
 	}
 
+	fmt.Println("step 1")
+
 	if len(o.webhooks) == 0 {
 		return nil
 	}
+
+	fmt.Println("step 2")
 
 	objs, err := o.Generate()
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("objects: %+v\n", objs)
 
 	err = o.WriteObjectsToDisk(objs...)
 	if err != nil {
@@ -104,11 +110,14 @@ spec:
 	}
 
 	p := KustomizeLabelPatch{
-		Labels:     o.service.selectors,
 		SecretName: o.secret.Name,
 		Port:       o.port,
 		CertDir:    o.certDir,
 	}
+	if o.service != nil {
+		p.Labels = o.service.selectors
+	}
+
 	funcMap := template.FuncMap{
 		"toYaml": toYAML,
 		"indent": indent,
@@ -120,6 +129,17 @@ spec:
 	buf := bytes.NewBuffer(nil)
 	if err := temp.Execute(buf, p); err != nil {
 		return err
+	}
+
+	exists, err := afero.DirExists(o.outFs, o.PatchOutputDir)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		err = o.outFs.MkdirAll(o.PatchOutputDir, 0766)
+		if err != nil {
+			return err
+		}
 	}
 	return afero.WriteFile(o.outFs, path.Join(o.PatchOutputDir, "manager_patch.yaml"), buf.Bytes(), 0644)
 }

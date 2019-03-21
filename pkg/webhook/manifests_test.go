@@ -18,12 +18,24 @@ package webhook
 
 import (
 	"go/token"
+	"log"
 	"reflect"
 	"testing"
 
 	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	"sigs.k8s.io/controller-tools/pkg/internal/general"
 )
+
+// TODO: not panic if not getting enough info
+func TestGen(t *testing.T) {
+	op := &Options{
+		WriterOptions: WriterOptions{
+			InputDir: "../../../controller-runtime/examples/builtins",
+		},
+	}
+	op.SetDefaults()
+	log.Fatal(Generate(op))
+}
 
 func TestManifestGenerator(t *testing.T) {
 	failFP := admissionregistrationv1beta1.Fail
