@@ -69,6 +69,7 @@ func PrintErrors(pkgs []*Package, filterKinds ...packages.ErrorKind) bool {
 // and for comparison.
 type Package struct {
 	*packages.Package
+	TypesMutex sync.Mutex
 
 	imports map[string]*Package
 
@@ -234,7 +235,9 @@ func (l *loader) typeCheck(pkg *Package) {
 	}
 
 	pkg.Fset = l.cfg.Fset
+	pkg.TypesMutex.Lock()
 	pkg.Types = types.NewPackage(pkg.PkgPath, pkg.Name)
+	pkg.TypesMutex.Unlock()
 
 	importer := importerFunc(func(path string) (*types.Package, error) {
 		if path == "unsafe" {
@@ -247,6 +250,8 @@ func (l *loader) typeCheck(pkg *Package) {
 			return nil, fmt.Errorf("no package information for %q", path)
 		}
 
+		importedPkg.TypesMutex.Lock()
+		defer importedPkg.TypesMutex.Unlock()
 		if importedPkg.Types != nil && importedPkg.Types.Complete() {
 			return importedPkg.Types, nil
 		}
